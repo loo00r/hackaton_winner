@@ -27,7 +27,7 @@ async def main() -> None:
                 if isinstance(block, TextContent):
                     print(block.text)
 
-            print(result.structured_content)
+            print(result.structured_content["summary"])
             print(result.is_error)
 
 

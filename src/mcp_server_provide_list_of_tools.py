@@ -23,10 +23,10 @@ async def main() -> None:
             result = await client.list_tools()
 
             for tool in result.tools:
-                print(tool.name)
-                print(tool.title)
-                print(tool.description)
-                print(tool.input_schema)
+                print(f"Tool name --> {tool.name}")
+                print(f"Tool title -> {tool.title}")
+                print(f"Tool desc --> {tool.description} \n")
+                print(f"Tool schema-> {json.dumps(tool.input_schema, indent=2)} ")
 
 
 if __name__ == "__main__":
