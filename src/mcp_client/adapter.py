@@ -7,3 +7,4 @@ def mcp_tool_to_openai_tool(mcp_tool):
             "parameters": mcp_tool.input_schema
         }
     }
+

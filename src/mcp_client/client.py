@@ -22,3 +22,4 @@ async def mcp_connection():
         transport = streamable_http_client("https://mcp.silpo.ua/mcp", http_client=http_client)
         async with Client(transport) as client:
             yield client
+

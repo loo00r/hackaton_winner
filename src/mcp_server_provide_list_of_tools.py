@@ -25,7 +25,7 @@ async def main() -> None:
 
             with open("tools.json", "w") as f:
                 for tool in result.tools:
-                    f.write(json.dumps(mcp_tool_to_openai_tool(tool)) + "\n")
+                    f.write(json.dumps(mcp_tool_to_openai_tool(tool)))
 
 
 
