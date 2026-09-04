@@ -7,6 +7,7 @@ from mcp import Client
 from mcp.client.streamable_http import streamable_http_client
 import asyncio
 import json
+from mcp_client.adapter import mcp_tool_to_openai_tool
 
 # my_oauth_provider має бути оголошений або імпортований тут
 load_dotenv()
@@ -22,11 +23,10 @@ async def main() -> None:
         async with Client(transport) as client:
             result = await client.list_tools()
 
-            for tool in result.tools:
-                print(f"Tool name --> {tool.name}")
-                print(f"Tool title -> {tool.title}")
-                print(f"Tool desc --> {tool.description} \n")
-                print(f"Tool schema-> {json.dumps(tool.input_schema, indent=2)} ")
+            with open("tools.json", "w") as f:
+                for tool in result.tools:
+                    f.write(json.dumps(mcp_tool_to_openai_tool(tool)) + "\n")
+
 
 
 if __name__ == "__main__":

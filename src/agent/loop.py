@@ -15,10 +15,11 @@ async def agent_loop(mcp_client: Client):
         messages=[
             {
                 'role': 'user',
-                'content': 'Hello, how are you?',
+                'content': 'Provide me a list of tools. And after that say Hello to me',
             }
         ],
         model='gemma4:12b',
+        tools=tools
     )
     print(response.choices[0].message.content)
 
