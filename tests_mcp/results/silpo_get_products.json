@@ -1,0 +1,107 @@
+{
+  "tool": "silpo_get_products",
+  "timestamp": "2026-09-06T11:31:13.163035+00:00",
+  "is_error": false,
+  "data": {
+    "success": true,
+    "summary": "Found 1739 products (showing 5)",
+    "products": [
+      {
+        "id": "1f118e64-4b7a-6c9c-9910-6360fa51c717",
+        "name": "Крем-сир Philadelphia Оригінальний 61%",
+        "slug": "krem-syr-philadelphia-oryginalnyi-61-389385",
+        "price": 219,
+        "oldPrice": null,
+        "stock": 99,
+        "available": true,
+        "image": "https://images.silpo.ua/v2/products/500x500/webp/050ee072-e61a-4897-9f44-c0990d5e7743.png",
+        "weighted": false,
+        "step": 1,
+        "displayRatio": "200г",
+        "specialPrices": [
+          {
+            "price": 179,
+            "count": 2,
+            "type": "from"
+          }
+        ],
+        "companyId": "1ec88c5d-a050-669c-8467-570a157f3e31",
+        "branchId": "1edb6b38-214b-66d6-a8e0-7f2fdd178564",
+        "externalProductId": 389385
+      },
+      {
+        "id": "1ed075e6-dcfb-6928-829a-dd63763181f9",
+        "name": "Тунець стейк свіжоморожений",
+        "slug": "tunets-steik-svizhomorozhenyi-126071",
+        "price": 399,
+        "oldPrice": 529,
+        "stock": 15,
+        "available": true,
+        "image": "https://images.silpo.ua/v2/products/500x500/webp/6af209c1-8b98-4728-8067-308bab9c8ed4.png",
+        "weighted": true,
+        "step": 0.5,
+        "displayRatio": "100г",
+        "specialPrices": null,
+        "companyId": "1ec88c5d-a050-669c-8467-570a157f3e31",
+        "branchId": "1edb6b38-214b-66d6-a8e0-7f2fdd178564",
+        "externalProductId": 126071
+      },
+      {
+        "id": "1ed96763-c813-62f0-b108-435a84f8f999",
+        "name": "Віскі Jim Beam White",
+        "slug": "viski-jim-beam-white-21446",
+        "price": 929,
+        "oldPrice": 1199,
+        "stock": 20,
+        "available": true,
+        "image": "https://images.silpo.ua/v2/products/500x500/webp/0cbc4118-a681-4f4b-b73e-0e05d021075c.png",
+        "weighted": false,
+        "step": 1,
+        "displayRatio": "1л",
+        "specialPrices": null,
+        "companyId": "1ec88c5d-a050-669c-8467-570a157f3e31",
+        "branchId": "1edb6b38-214b-66d6-a8e0-7f2fdd178564",
+        "externalProductId": 21446
+      },
+      {
+        "id": "1edb7f4e-2cb3-6e4a-b568-5977fa14bc99",
+        "name": "Сендвіч з баликом",
+        "slug": "sendvich-z-balykom-495932",
+        "price": 81.18,
+        "oldPrice": 99,
+        "stock": 2,
+        "available": true,
+        "image": "https://images.silpo.ua/v2/products/500x500/webp/83455ca2-000e-4537-8ec9-1996e1bfd738.png",
+        "weighted": false,
+        "step": 1,
+        "displayRatio": "215г",
+        "specialPrices": null,
+        "companyId": "1ec88c5d-a050-669c-8467-570a157f3e31",
+        "branchId": "1edb6b38-214b-66d6-a8e0-7f2fdd178564",
+        "externalProductId": 495932
+      },
+      {
+        "id": "1edb86a1-0847-630e-ae9c-b5cfa3b7b301",
+        "name": "Хліб подовий гречаний",
+        "slug": "khlib-podovyi-grechanyi-591899",
+        "price": 141.96,
+        "oldPrice": 169,
+        "stock": 3.75,
+        "available": true,
+        "image": "https://images.silpo.ua/v2/products/500x500/webp/9f8ced6e-f4fe-4fc5-aca6-292b26008ef6.png",
+        "weighted": true,
+        "step": 0.25,
+        "displayRatio": "100г",
+        "specialPrices": null,
+        "companyId": "1ec88c5d-a050-669c-8467-570a157f3e31",
+        "branchId": "1edb6b38-214b-66d6-a8e0-7f2fdd178564",
+        "externalProductId": 591899
+      }
+    ],
+    "meta": {
+      "limit": 5,
+      "offset": 0,
+      "total": 1739
+    }
+  }
+}

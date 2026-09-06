@@ -21,7 +21,7 @@ async def main() -> None:
     ) as http_client:
         transport = streamable_http_client("https://mcp.silpo.ua/mcp", http_client=http_client)
         async with Client(transport) as client:
-            result = await client.call_tool("silpo_get_my_family", {"title": "Get My Family"})
+            result = await client.call_tool("silpo_get_my_shopping_cart")
 
             for block in result.content:
                 if isinstance(block, TextContent):

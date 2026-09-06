@@ -1,0 +1,10 @@
+{
+  "tool": "silpo_get_my_food_restrictions",
+  "timestamp": "2026-09-06T11:31:12.333534+00:00",
+  "is_error": false,
+  "data": {
+    "success": true,
+    "summary": "No food restrictions set",
+    "restrictions": []
+  }
+}

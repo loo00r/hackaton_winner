@@ -1,0 +1,19 @@
+{
+  "tool": "silpo_add_or_update_cart_products",
+  "timestamp": "2026-09-06T11:31:13.271153+00:00",
+  "is_error": false,
+  "data": {
+    "success": true,
+    "summary": "Updated 2 product(s)",
+    "products": [
+      {
+        "productId": "1f05d751-dc7e-630e-90a3-4f8706f2503b",
+        "quantity": 1
+      },
+      {
+        "productId": "1f0cd807-f218-694a-a117-db8945ba6700",
+        "quantity": 0.1
+      }
+    ]
+  }
+}

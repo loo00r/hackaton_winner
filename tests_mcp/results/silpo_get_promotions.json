@@ -1,0 +1,47 @@
+{
+  "tool": "silpo_get_promotions",
+  "timestamp": "2026-09-06T11:31:13.031909+00:00",
+  "is_error": false,
+  "data": {
+    "success": true,
+    "summary": "Found 6 active promotions",
+    "promotions": [
+      {
+        "code": "only_online",
+        "title": "Тільки Онлайн",
+        "productCount": 1401,
+        "url": "https://silpo.ua/offers/only_online"
+      },
+      {
+        "code": "melkoopt",
+        "title": "Гуртом дешевше",
+        "productCount": 284,
+        "url": "https://silpo.ua/offers/melkoopt"
+      },
+      {
+        "code": "cinotyzhyky",
+        "title": "Цінотижики",
+        "productCount": 36,
+        "url": "https://silpo.ua/offers/cinotyzhyky"
+      },
+      {
+        "code": "pakunok-shkoliara",
+        "title": "Пакунок школяра",
+        "productCount": 15,
+        "url": "https://silpo.ua/offers/pakunok-shkoliara"
+      },
+      {
+        "code": "kupuy_ta_zaoshadjuy",
+        "title": "Купуй та заощаджуй",
+        "productCount": 3,
+        "url": "https://silpo.ua/offers/kupuy_ta_zaoshadjuy"
+      },
+      {
+        "code": "tefal-sale",
+        "title": "Тефаль",
+        "productCount": 1,
+        "url": "https://silpo.ua/offers/tefal-sale"
+      }
+    ]
+  }
+}

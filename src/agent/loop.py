@@ -4,19 +4,37 @@ import asyncio
 from mcp_client.client import mcp_connection
 import json
 
+from llm.prompt import SYSTEM_PROMPT
+
 
 
 AGENT_LOOP = True
+FILTER_TOOLS = [
+    "silpo_get_my_shopping_cart",
+    "silpo_create_shopping_cart",
+    "silpo_get_shopping_cart_by_id",
+    "silpo_find_address",
+    "silpo_get_available_delivery_types",
+    "silpo_get_time_slots",
+    "silpo_find_products_batch",
+    "silpo_get_products",
+    "silpo_get_promotions",
+    "silpo_add_or_update_cart_products",
+    "silpo_remove_cart_products",
+    "silpo_get_my_food_restrictions",
+    "silpo_get_my_favorites",
+]
+
 
 with open("tools.jsonl", "r") as json_file:
-    tools = [json.loads(line) for line in json_file]
-    tools = [tool for tool in tools if tool["function"]["name"] in ["silpo_get_my_family", "silpo_get_my_family_by_name"]]
+    tools = [json.loads(line) for line in json_file if line.strip()]
+    tools = [tool for tool in tools if tool["function"]["name"] in FILTER_TOOLS]
 
 async def agent_loop(mcp_client: Client, tools: list):
     messages = [
         {
             'role': 'system',
-            'content': 'cпробуй викликати тулу  silpo_get_my_family і подивись чи ти зможеш побачити що вона поверне'
+            'content': SYSTEM_PROMPT
         }]
 
     while AGENT_LOOP:
