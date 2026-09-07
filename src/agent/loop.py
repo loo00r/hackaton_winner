@@ -1,14 +1,13 @@
-from llm.client import llm_client
-from mcp import Client
 import asyncio
-from mcp_client.client import mcp_connection
 import json
+import os
 
+from mcp import Client
+
+from llm.client import llm_client
 from llm.prompt import SYSTEM_PROMPT
+from mcp_client.client import mcp_connection
 
-
-
-AGENT_LOOP = True
 FILTER_TOOLS = [
     "silpo_get_my_shopping_cart",
     "silpo_create_shopping_cart",
@@ -25,57 +24,66 @@ FILTER_TOOLS = [
     "silpo_get_my_favorites",
 ]
 
+# Шлях відносно цього файлу, не cwd
+_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+_TOOLS_PATH = os.path.join(_THIS_DIR, "tools.jsonl")
 
-with open("tools.jsonl", "r") as json_file:
+with open(_TOOLS_PATH, "r") as json_file:
     tools = [json.loads(line) for line in json_file if line.strip()]
     tools = [tool for tool in tools if tool["function"]["name"] in FILTER_TOOLS]
 
-async def agent_loop(mcp_client: Client, tools: list):
-    messages = [
-        {
-            'role': 'system',
-            'content': SYSTEM_PROMPT
-        }]
 
-    while AGENT_LOOP:
+async def agent_loop(mcp_client: Client, tools: list, user_message: str):
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": user_message},
+    ]
+
+    while True:
         response = llm_client.chat.completions.create(
             messages=messages,
-            model='gemma4:12b',
-            tools=tools
+            model="gpt-4o",
+            tools=tools,
         )
         message = response.choices[0].message
         messages.append(message)
-        print(messages)
 
         if not message.tool_calls:
             print(message.content)
             break
 
         for tool_call in message.tool_calls:
-
             name = tool_call.function.name
             arguments = json.loads(tool_call.function.arguments)
 
-            print("LLM wants:", name)
-            print("Arguments:", arguments)
+            print(f"\n Calling Tool: {name}")
 
-            # ОЦЕ ТУТ реальний MCP call
-            result = await mcp_client.call_tool(
-                name,
-                arguments
-            )
+            result = await mcp_client.call_tool(name, arguments)
 
-            print("MCP result:", result)
+
+
+            tool_text = json.dumps(result.structured_content, ensure_ascii=False) if result.structured_content is not None else result.content[0].text
 
             messages.append({
                 "role": "tool",
                 "tool_call_id": tool_call.id,
-                "content": json.dumps(result.structured_content)
+                "content": tool_text,
             })
 
+
 async def main() -> None:
+    user_message = input(" You: ").strip()
+    if not user_message:
+        user_message = (
+            "Організуй вечірку на 5 людей, бюджет 2000 грн, "
+            "адреса Київ вулиця Хрещатик 1, одна людина веган. "
+            "Доставка на сьогодні ввечері."
+        )
+        print(f"   (using default: {user_message})")
+
     async with mcp_connection() as mcp_client:
-        await agent_loop(mcp_client, tools)
+        await agent_loop(mcp_client, tools, user_message)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

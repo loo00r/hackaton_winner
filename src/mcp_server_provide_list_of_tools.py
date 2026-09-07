@@ -1,12 +1,13 @@
 
-import httpx2
-
-from dotenv import load_dotenv
-import os
-from mcp import Client
-from mcp.client.streamable_http import streamable_http_client
 import asyncio
 import json
+import os
+
+import httpx2
+from dotenv import load_dotenv
+from mcp import Client
+from mcp.client.streamable_http import streamable_http_client
+
 from mcp_client.adapter import mcp_tool_to_openai_tool
 
 # my_oauth_provider має бути оголошений або імпортований тут
@@ -24,8 +25,7 @@ async def main() -> None:
             result = await client.list_tools()
 
             with open("tools.json", "w") as f:
-                for tool in result.tools:
-                    f.write(json.dumps(mcp_tool_to_openai_tool(tool)))
+                f.writelines(json.dumps(mcp_tool_to_openai_tool(tool)) for tool in result.tools)
 
 
 

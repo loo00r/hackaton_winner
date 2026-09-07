@@ -1,7 +1,11 @@
 from openai import OpenAI
+import os
+from dotenv import load_dotenv
 
+# my_oauth_provider має бути оголошений або імпортований тут
+load_dotenv()
+API_KEY = os.getenv("OPENAI_API_KEY")
 
 llm_client = OpenAI(
-    base_url='http://localhost:11434/v1/',
-    api_key='ollama',  # required but ignored
+    api_key=API_KEY  # required but ignored
 )
