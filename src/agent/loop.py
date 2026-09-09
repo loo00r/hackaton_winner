@@ -1,12 +1,14 @@
 import asyncio
 import json
 import os
+import sys
+from pathlib import Path
 
 from mcp import Client
 
-from llm.client import llm_client
-from llm.prompt import SYSTEM_PROMPT
-from mcp_client.client import mcp_connection
+from src.llm.client import llm_client
+from src.llm.prompt import SYSTEM_PROMPT
+from src.mcp_client.client import mcp_connection
 
 FILTER_TOOLS = [
     "silpo_get_my_shopping_cart",
@@ -25,13 +27,16 @@ FILTER_TOOLS = [
 ]
 
 # Шлях відносно цього файлу, не cwd
-_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+_THIS_DIR = Path(__file__).resolve().parent
 _TOOLS_PATH = os.path.join(_THIS_DIR, "tools.jsonl")
+sys.path.insert(0, str(_THIS_DIR))
 
 with open(_TOOLS_PATH, "r") as json_file:
     tools = [json.loads(line) for line in json_file if line.strip()]
     tools = [tool for tool in tools if tool["function"]["name"] in FILTER_TOOLS]
 
+
+history_by_chat: dict[int, list[dict]] = {}
 
 async def agent_loop(mcp_client: Client, tools: list, user_message: str):
     messages = [
