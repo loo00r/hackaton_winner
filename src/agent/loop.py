@@ -54,8 +54,7 @@ async def agent_loop(mcp_client: Client, tools: list, user_message: str):
         messages.append(message)
 
         if not message.tool_calls:
-            print(message.content)
-            break
+            return message.content
 
         for tool_call in message.tool_calls:
             name = tool_call.function.name
