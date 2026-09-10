@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 from mcp import Client
@@ -47,7 +48,10 @@ async def agent_loop(mcp_client: Client, tools: list, user_message: str, chat_id
     history.append({"role": "user", "content": user_message})
     logger.info("Agent input: chat_id=%s, history_items=%s", chat_id, len(history))
     messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {
+            "role": "system",
+            "content": f"{SYSTEM_PROMPT}\nCurrent UTC time: {datetime.now(timezone.utc).isoformat()}",
+        },
         *history,
     ]
         
