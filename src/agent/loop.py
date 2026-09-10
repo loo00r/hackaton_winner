@@ -43,7 +43,7 @@ async def agent_loop(mcp_client: Client, tools: list, user_message: str):
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": user_message},
     ]
-
+        
     while True:
         response = llm_client.chat.completions.create(
             messages=messages,

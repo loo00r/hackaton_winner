@@ -10,7 +10,7 @@ from aiogram.filters import CommandStart
 from aiogram.types import Message
 from dotenv import load_dotenv
 
-from agent.loop import agent_loop
+from src.agent.loop import agent_loop
 
 load_dotenv()
 
