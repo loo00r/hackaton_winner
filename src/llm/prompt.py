@@ -21,6 +21,11 @@ Do not invent product availability, prices, cart totals, delivery slots, or chec
 If no cart exists, create one only after address, delivery type, branch, and timeslot are known.
 5. After silpo_get_shopping_cart_by_id, use cart.shipments[0].branchId, 
 cart.deliveryType, and cart.timeslot for product search tools.
+   If the user changes to SelfPickup, first call silpo_list_branches(hasPickup=true),
+   choose or ask the user to choose a branch, then update the cart and re-read it.
+   Never search with SelfPickup and branch/timeslot from a DeliveryHome cart.
+   Request time slots with start=the current UTC time and choose only available=true.
+   If address search lacks an exact city, street, and house match, ask the user to clarify.
 6. After every cart mutation tool, 
 immediately call silpo_get_shopping_cart_by_id and inspect validations, totals, products, and checkout links.
 7. Never report the cart as ready if cart validations contain blocking errors.

@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import os
 import sys
 from pathlib import Path
@@ -14,8 +15,10 @@ FILTER_TOOLS = [
     "silpo_get_my_shopping_cart",
     "silpo_create_shopping_cart",
     "silpo_get_shopping_cart_by_id",
+    "silpo_update_shopping_cart",
     "silpo_find_address",
     "silpo_get_available_delivery_types",
+    "silpo_list_branches",
     "silpo_get_time_slots",
     "silpo_find_products_batch",
     "silpo_get_products",
@@ -37,16 +40,19 @@ with open(_TOOLS_PATH, "r") as json_file:
 
 
 history_by_chat: dict[int, list[dict]] = {}
+logger = logging.getLogger(__name__)
 
 async def agent_loop(mcp_client: Client, tools: list, user_message: str, chat_id: int):
     history = history_by_chat.setdefault(chat_id, [])
     history.append({"role": "user", "content": user_message})
+    logger.info("Agent input: chat_id=%s, history_items=%s", chat_id, len(history))
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         *history,
     ]
         
     while True:
+        logger.info("LLM input: %s", json.dumps(messages, ensure_ascii=False, default=str))
         response = llm_client.chat.completions.create(
             messages=messages,
             model="gpt-4o",
@@ -56,15 +62,17 @@ async def agent_loop(mcp_client: Client, tools: list, user_message: str, chat_id
         assistant_message = message.model_dump(exclude_none=True)
         messages.append(assistant_message)
         history.append(assistant_message)
+        logger.info("LLM output: %s", json.dumps(assistant_message, ensure_ascii=False))
 
         if not message.tool_calls:
+            logger.info("Agent finished: chat_id=%s, history_items=%s", chat_id, len(history))
             return message.content
 
         for tool_call in message.tool_calls:
             name = tool_call.function.name
             arguments = json.loads(tool_call.function.arguments)
 
-            print(f"\n Calling Tool: {name}")
+            logger.info("MCP call: tool=%s, arguments=%s", name, tool_call.function.arguments)
 
             result = await mcp_client.call_tool(name, arguments)
 
@@ -79,6 +87,7 @@ async def agent_loop(mcp_client: Client, tools: list, user_message: str, chat_id
             }
             messages.append(tool_message)
             history.append(tool_message)
+            logger.info("MCP result: tool=%s, content=%s", name, tool_text)
 
 
 async def main() -> None:
