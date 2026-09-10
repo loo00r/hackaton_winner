@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import sys
+from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -18,6 +19,7 @@ FILTER_TOOLS = [
     "silpo_get_shopping_cart_by_id",
     "silpo_update_shopping_cart",
     "silpo_find_address",
+    "silpo_get_my_delivery_addresses",
     "silpo_get_available_delivery_types",
     "silpo_list_branches",
     "silpo_get_time_slots",
@@ -43,7 +45,10 @@ with open(_TOOLS_PATH, "r") as json_file:
 history_by_chat: dict[int, list[dict]] = {}
 logger = logging.getLogger(__name__)
 
-async def agent_loop(mcp_client: Client, tools: list, user_message: str, chat_id: int):
+async def agent_loop(
+    mcp_client: Client, tools: list, user_message: str, chat_id: int,
+    on_progress: Callable[[str], Awaitable[None]] | None = None,
+):
     history = history_by_chat.setdefault(chat_id, [])
     history.append({"role": "user", "content": user_message})
     logger.info("Agent input: chat_id=%s, history_items=%s", chat_id, len(history))
@@ -67,6 +72,9 @@ async def agent_loop(mcp_client: Client, tools: list, user_message: str, chat_id
         messages.append(assistant_message)
         history.append(assistant_message)
         logger.info("LLM output: %s", json.dumps(assistant_message, ensure_ascii=False))
+
+        if message.tool_calls and message.content and on_progress:
+            await on_progress(message.content)
 
         if not message.tool_calls:
             logger.info("Agent finished: chat_id=%s, history_items=%s", chat_id, len(history))
