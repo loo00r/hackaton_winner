@@ -11,6 +11,7 @@ from aiogram.types import Message
 from dotenv import load_dotenv
 
 from src.agent.loop import agent_loop
+from src.mcp_client.client import mcp_connection
 
 load_dotenv()
 
@@ -62,13 +63,12 @@ async def message_handler(mcp_client, tools, user_message):
 async def main() -> None:
     # Initialize Bot instance with default bot properties which will be passed to all API calls
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-
-    # And the run events dispatching
-    await dp.start_polling(bot)
+    
+    async with mcp_connection() as mcp_client:
+        await dp.start_polling(bot, mcp_client=mcp_client)
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     asyncio.run(main())
-
 
