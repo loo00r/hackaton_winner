@@ -38,10 +38,12 @@ with open(_TOOLS_PATH, "r") as json_file:
 
 history_by_chat: dict[int, list[dict]] = {}
 
-async def agent_loop(mcp_client: Client, tools: list, user_message: str):
+async def agent_loop(mcp_client: Client, tools: list, user_message: str, chat_id: int):
+    history = history_by_chat.setdefault(chat_id, [])
+    history.append({"role": "user", "content": user_message})
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": user_message},
+        *history,
     ]
         
     while True:
@@ -51,7 +53,9 @@ async def agent_loop(mcp_client: Client, tools: list, user_message: str):
             tools=tools,
         )
         message = response.choices[0].message
-        messages.append(message)
+        assistant_message = message.model_dump(exclude_none=True)
+        messages.append(assistant_message)
+        history.append(assistant_message)
 
         if not message.tool_calls:
             return message.content
@@ -68,11 +72,13 @@ async def agent_loop(mcp_client: Client, tools: list, user_message: str):
 
             tool_text = json.dumps(result.structured_content, ensure_ascii=False) if result.structured_content is not None else result.content[0].text
 
-            messages.append({
+            tool_message = {
                 "role": "tool",
                 "tool_call_id": tool_call.id,
                 "content": tool_text,
-            })
+            }
+            messages.append(tool_message)
+            history.append(tool_message)
 
 
 async def main() -> None:
@@ -86,7 +92,7 @@ async def main() -> None:
         print(f"   (using default: {user_message})")
 
     async with mcp_connection() as mcp_client:
-        await agent_loop(mcp_client, tools, user_message)
+        await agent_loop(mcp_client, tools, user_message, chat_id=0)
 
 
 if __name__ == "__main__":

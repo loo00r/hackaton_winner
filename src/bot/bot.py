@@ -29,6 +29,7 @@ async def message_handler(message: Message, mcp_client) -> None:
         mcp_client=mcp_client,
         tools=tools,
         user_message=message.text,
+        chat_id=message.chat.id,
     )
     await message.answer(response_text)
 
