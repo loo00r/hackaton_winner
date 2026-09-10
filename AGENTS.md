@@ -49,6 +49,14 @@ instead of implementing them early.
 - Make one small, fixed change per iteration: one hypothesis, normally no more
   than 15–20 changed lines. Do not combine cleanup, refactoring, and a feature
   in the same iteration.
+- "Minimal" means the smallest coherent, production-correct behaviour, not
+  the smallest possible diff. Delete obsolete, sample, or broken code in the
+  same change when it conflicts with its correct replacement.
+- Do not repurpose misleading sample code (for example an echo handler) into
+  production behaviour merely to reduce a diff. Replace it with clearly named,
+  direct code.
+- Do not create mocks, dummy tests, wrappers, or abstractions when they add
+  more complexity than the behaviour they verify.
 - Add a focused test only when it gives real signal without creating test
   scaffolding larger than the change. Run it, report the result, and wait for
   user review before starting the next implementation change.
