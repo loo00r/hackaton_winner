@@ -69,6 +69,9 @@ instead of implementing them early.
   caller in the same change.
 - Do not silently swallow errors. At integration boundaries, log enough
   context to diagnose the failing layer without logging secrets or tokens.
+- Report observed incorrect behaviour with the concrete evidence that exposed
+  it. Do not silently accept it, present an inference as a verified result, or
+  hide it behind a prompt-only change.
 - Treat `message.text` as optional. Non-text Telegram updates need an explicit
   user-facing response or deliberate filtering; never pass `None` to the LLM
   by accident.

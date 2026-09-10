@@ -50,7 +50,7 @@ async def message_handler(message: Message, mcp_client) -> None:
         task.cancel()
 
     async def send_progress(text: str) -> None:
-        await message.answer(f"🧠 {text}")
+        await message.answer(f"{text}")
 
     async with chat_locks.setdefault(message.chat.id, asyncio.Lock()):
         response_text = await agent_loop(
