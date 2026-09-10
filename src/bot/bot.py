@@ -11,6 +11,7 @@ from aiogram.types import Message
 from dotenv import load_dotenv
 
 from src.agent.loop import agent_loop, tools
+from src.bot.mood import mood_status
 from src.mcp_client.client import mcp_connection
 
 load_dotenv()
@@ -31,7 +32,7 @@ async def message_handler(message: Message, mcp_client) -> None:
         user_message=message.text,
         chat_id=message.chat.id,
     )
-    await message.answer(response_text)
+    await message.answer(f"{mood_status(message.text)}\n{response_text}")
 
 
 async def main() -> None:

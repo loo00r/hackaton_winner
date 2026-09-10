@@ -50,7 +50,7 @@ async def agent_loop(mcp_client: Client, tools: list, user_message: str, chat_id
     messages = [
         {
             "role": "system",
-            "content": f"{SYSTEM_PROMPT}\nCurrent UTC time: {datetime.now(timezone.utc).isoformat()}",
+            "content": f"{SYSTEM_PROMPT}\nCurrent UTC time: {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}",
         },
         *history,
     ]
