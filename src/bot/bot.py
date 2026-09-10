@@ -3,7 +3,7 @@ import logging
 import sys
 from os import getenv
 
-from aiogram import Bot, Dispatcher, html
+from aiogram import Bot, Dispatcher, F, html
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
@@ -22,7 +22,7 @@ dp = Dispatcher()
 
 
 
-@dp.message()
+@dp.message(F.text)
 async def message_handler(message: Message, mcp_client) -> None:
 
     response_text = await agent_loop(
