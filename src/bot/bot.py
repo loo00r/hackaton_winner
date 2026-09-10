@@ -1,6 +1,8 @@
 import asyncio
 import logging
 import sys
+from functools import partial
+from itertools import cycle
 from os import getenv
 
 from aiogram import Bot, Dispatcher, F, html
@@ -11,6 +13,7 @@ from aiogram.types import Message
 from dotenv import load_dotenv
 
 from src.agent.loop import agent_loop, tools
+from src.bot.moods import MOOD_FACES
 from src.mcp_client.client import mcp_connection
 
 load_dotenv()
@@ -23,6 +26,12 @@ follow_up_tasks: dict[int, asyncio.Task] = {}
 follow_up_active: set[int] = set()
 chat_locks: dict[int, asyncio.Lock] = {}
 SILENCE_PROMPT = "[SILENCE FOLLOW-UP] No user reply for 15 seconds. Use MCP to find safe options and continue; do not repeat the question."
+mood_preview = cycle(MOOD_FACES)
+
+
+async def answer_with_mood(message: Message, text: str) -> None:
+    await message.answer(html.pre(next(mood_preview)), parse_mode=ParseMode.HTML)
+    await message.answer(text)
 
 
 async def resume_after_silence(message: Message, mcp_client) -> None:
@@ -33,9 +42,9 @@ async def resume_after_silence(message: Message, mcp_client) -> None:
         async with chat_locks.setdefault(chat_id, asyncio.Lock()):
             response = await agent_loop(
                 mcp_client=mcp_client, tools=tools, user_message=SILENCE_PROMPT,
-                chat_id=chat_id, on_progress=message.answer,
+                chat_id=chat_id, on_progress=partial(answer_with_mood, message),
             )
-            await message.answer(response)
+            await answer_with_mood(message, response)
     finally:
         follow_up_active.discard(chat_id)
 
@@ -50,14 +59,14 @@ async def message_handler(message: Message, mcp_client) -> None:
         task.cancel()
 
     async def send_progress(text: str) -> None:
-        await message.answer(f"{text}")
+        await answer_with_mood(message, text)
 
     async with chat_locks.setdefault(message.chat.id, asyncio.Lock()):
         response_text = await agent_loop(
             mcp_client=mcp_client, tools=tools, user_message=message.text,
             chat_id=message.chat.id, on_progress=send_progress,
         )
-    await message.answer(response_text)
+    await answer_with_mood(message, response_text)
     if "?" in response_text:
         follow_up_tasks[message.chat.id] = asyncio.create_task(
             resume_after_silence(message, mcp_client)
