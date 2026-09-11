@@ -36,7 +36,7 @@ async def resume_after_silence(message: Message, mcp_client) -> None:
                 mcp_client=mcp_client, tools=tools, user_message=SILENCE_PROMPT,
                 chat_id=chat_id, on_progress=message.answer,
             )
-            await message.answer(f"{mood_status(SILENCE_PROMPT)}\n{response}")
+            await message.answer(f"{response}")
     finally:
         follow_up_active.discard(chat_id)
 
