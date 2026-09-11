@@ -1,16 +1,14 @@
 import asyncio
 import json
 import logging
-import os
-import sys
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
-from pathlib import Path
 
 from mcp import Client
 
 from src.llm.client import llm_client
 from src.llm.prompt import SYSTEM_PROMPT
+from src.mcp_client.adapter import mcp_tool_to_openai_tool
 from src.mcp_client.client import mcp_connection
 
 FILTER_TOOLS = [
@@ -32,14 +30,7 @@ FILTER_TOOLS = [
     "silpo_get_my_favorites",
 ]
 
-# Шлях відносно цього файлу, не cwd
-_THIS_DIR = Path(__file__).resolve().parent
-_TOOLS_PATH = os.path.join(_THIS_DIR, "tools.jsonl")
-sys.path.insert(0, str(_THIS_DIR))
-
-with open(_TOOLS_PATH, "r") as json_file:
-    tools = [json.loads(line) for line in json_file if line.strip()]
-    tools = [tool for tool in tools if tool["function"]["name"] in FILTER_TOOLS]
+tools: list[dict] = []
 
 
 history_by_chat: dict[int, list[dict]] = {}
@@ -113,6 +104,13 @@ async def main() -> None:
         print(f"   (using default: {user_message})")
 
     async with mcp_connection() as mcp_client:
+        result = await mcp_client.list_tools()
+        tools[:] = map(
+            mcp_tool_to_openai_tool,
+            (tool for tool in result.tools if tool.name in FILTER_TOOLS),
+        )
+        if not tools:
+            raise RuntimeError("MCP returned no enabled tools; agent will not start")
         await agent_loop(mcp_client, tools, user_message, chat_id=0)
 
 

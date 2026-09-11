@@ -10,7 +10,8 @@ from aiogram.filters import CommandStart
 from aiogram.types import Message
 from dotenv import load_dotenv
 
-from src.agent.loop import agent_loop, tools
+from src.agent.loop import FILTER_TOOLS, agent_loop, tools
+from src.mcp_client.adapter import mcp_tool_to_openai_tool
 from src.mcp_client.client import mcp_connection
 
 load_dotenv()
@@ -69,6 +70,14 @@ async def main() -> None:
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     
     async with mcp_connection() as mcp_client:
+        result = await mcp_client.list_tools()
+        tools[:] = map(
+            mcp_tool_to_openai_tool,
+            (tool for tool in result.tools if tool.name in FILTER_TOOLS),
+        )
+        if not tools:
+            raise RuntimeError("MCP returned no enabled tools; polling will not start")
+        logging.info("Loaded %d enabled tools from MCP server", len(tools))
         await dp.start_polling(bot, mcp_client=mcp_client)
 
 
