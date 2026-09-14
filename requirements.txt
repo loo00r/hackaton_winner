@@ -1,0 +1,6 @@
+aiogram
+httpx2
+mcp
+openai
+python-dotenv
+pytest

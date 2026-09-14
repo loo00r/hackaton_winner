@@ -42,7 +42,18 @@ Telegram message
 ## Запуск
 
 Потрібні Python 3.14+, Telegram bot token, OpenAI API key і Silpo MCP token.
-Створи `.env` у корені проєкту:
+
+### Setup
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+
+cp .env.example .env
+```
+Після цього додати ключі в `.env`:
 
 ```env
 BOT_TOKEN=...
