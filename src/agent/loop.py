@@ -118,14 +118,6 @@ async def agent_loop(
 
 
 async def main() -> None:
-    user_message = input(" You: ").strip()
-    if not user_message:
-        user_message = (
-            "Організуй вечірку на 5 людей, бюджет 2000 грн, "
-            "адреса Київ вулиця Хрещатик 1, одна людина веган. "
-            "Доставка на сьогодні ввечері."
-        )
-        print(f"   (using default: {user_message})")
 
     async with mcp_connection() as mcp_client:
         result = await mcp_client.list_tools()

@@ -1,12 +1,12 @@
 import asyncio
 import logging
+import re
 import sys
 from contextlib import suppress
 from os import getenv
 
-from aiogram import Bot, Dispatcher, F, html
-from aiogram.client.default import DefaultBotProperties
-from aiogram.enums import ChatAction, ParseMode
+from aiogram import Bot, Dispatcher, F
+from aiogram.enums import ChatAction
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 from dotenv import load_dotenv
@@ -85,6 +85,15 @@ class InstantLogFilter(logging.Filter):
 typewriter_logs = TypewriterLogHandler()
 
 
+def telegram_text(text: str) -> str:
+    """Keep LLM replies readable without relying on Telegram Markdown parsing."""
+    text = re.sub(r"\[([^\]]+)\]\((https?://[^)\s]+)\)", r"\1: \2", text)
+    text = re.sub(r"(?m)^\s{0,3}#{1,6}\s*", "", text)
+    text = re.sub(r"(?m)^\s*[-*+]\s+", "• ", text)
+    text = re.sub(r"(?m)^>\s?", "", text)
+    return text.replace("**", "").replace("__", "").replace("`", "")
+
+
 async def resume_after_silence(message: Message, mcp_client) -> None:
     await asyncio.sleep(15)
     chat_id = message.chat.id
@@ -93,9 +102,10 @@ async def resume_after_silence(message: Message, mcp_client) -> None:
         async with chat_locks.setdefault(chat_id, asyncio.Lock()):
             response = await agent_loop(
                 mcp_client=mcp_client, tools=tools, user_message=SILENCE_PROMPT,
-                chat_id=chat_id, on_progress=message.answer,
+                chat_id=chat_id,
+                on_progress=lambda text: message.answer(telegram_text(text)),
             )
-            await message.answer(response)
+            await message.answer(telegram_text(response))
     finally:
         follow_up_active.discard(chat_id)
 
@@ -134,7 +144,7 @@ def configure_logging() -> None:
 
 @dp.message(CommandStart())
 async def start_handler(message: Message) -> None:
-    name = html.quote(message.from_user.full_name) if message.from_user else "друже"
+    name = message.from_user.full_name if message.from_user else "друже"
     await message.answer(f"Привіт, {name}! Допоможу зібрати кошик для твоєї події.")
 
 
@@ -147,7 +157,7 @@ async def message_handler(message: Message, mcp_client) -> None:
         task.cancel()
 
     async def send_progress(text: str) -> None:
-        await message.answer(f"{text}")
+        await message.answer(telegram_text(text))
 
     async with chat_locks.setdefault(message.chat.id, asyncio.Lock()):
         await message.bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
@@ -161,7 +171,7 @@ async def message_handler(message: Message, mcp_client) -> None:
             typing.cancel()
             with suppress(asyncio.CancelledError):
                 await typing
-        await message.answer(response_text)
+        await message.answer(telegram_text(response_text))
     if "?" in response_text:
         follow_up_tasks[message.chat.id] = asyncio.create_task(
             resume_after_silence(message, mcp_client)
@@ -173,7 +183,7 @@ async def main() -> None:
     await show_startup_banner()
     typewriter_logs.start()
     try:
-        bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+        bot = Bot(token=TOKEN)
 
         async with mcp_connection() as mcp_client:
             result = await mcp_client.list_tools()
