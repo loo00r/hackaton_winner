@@ -54,7 +54,7 @@ async def agent_loop(
     ]
         
     while True:
-        logger.info("LLM input: %s", json.dumps(messages, ensure_ascii=False, default=str))
+        logger.info("LLM: chat=%s, deciding next step", chat_id)
         response = llm_client.chat.completions.create(
             messages=messages,
             model="gpt-4o",
@@ -64,7 +64,10 @@ async def agent_loop(
         assistant_message = message.model_dump(exclude_none=True)
         messages.append(assistant_message)
         history.append(assistant_message)
-        logger.info("LLM output: %s", json.dumps(assistant_message, ensure_ascii=False))
+        if message.tool_calls:
+            logger.info("LLM: selected %d MCP step(s)", len(message.tool_calls))
+        else:
+            logger.info("LLM: final response ready")
 
         if message.tool_calls and message.content and on_progress:
             await on_progress(message.content)
@@ -77,7 +80,7 @@ async def agent_loop(
             name = tool_call.function.name
             arguments = json.loads(tool_call.function.arguments)
 
-            logger.info("MCP call: tool=%s, arguments=%s", name, tool_call.function.arguments)
+            logger.info("MCP → %s", name)
 
             result = await mcp_client.call_tool(name, arguments)
 
@@ -92,7 +95,8 @@ async def agent_loop(
             }
             messages.append(tool_message)
             history.append(tool_message)
-            logger.info("MCP result: tool=%s, content=%s", name, len(tool_text))
+            summary = result.structured_content.get("summary") if isinstance(result.structured_content, dict) else None
+            logger.info("MCP ← %s%s", name, f": {summary}" if summary else "")
 
 
 async def main() -> None:

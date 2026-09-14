@@ -87,4 +87,6 @@ async def main() -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+    for noisy_logger in ("httpx", "httpx2", "openai._base_client", "aiogram.event"):
+        logging.getLogger(noisy_logger).setLevel(logging.WARNING)
     asyncio.run(main())
