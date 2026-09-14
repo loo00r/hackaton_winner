@@ -40,6 +40,10 @@ async def resume_after_silence(message: Message, mcp_client) -> None:
     finally:
         follow_up_active.discard(chat_id)
 
+@dp.message(CommandStart())
+async def start_handler(message: Message) -> None:
+    name = html.quote(message.from_user.full_name) if message.from_user else "друже"
+    await message.answer(f"Привіт, {name}! Допоможу зібрати кошик для твоєї події.")
 
 
 @dp.message(F.text)
