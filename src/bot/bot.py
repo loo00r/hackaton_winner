@@ -114,6 +114,19 @@ async def show_startup_banner() -> None:
     await typewrite(STARTUP_STATUS, delay=0.012)
 
 
+def progress_card(status: str, active_dot: int) -> str:
+    dots = " ".join("●" if index == active_dot else "○" for index in range(5))
+    return f"{html.pre(BOT_ART)}\n{html.quote(status)}\n{dots}"
+
+
+async def animate_progress(status_message: Message, status: list[str]) -> None:
+    active_dot = 0
+    while True:
+        await status_message.edit_text(progress_card(status[0], active_dot))
+        active_dot = (active_dot + 1) % 5
+        await asyncio.sleep(1)
+
+
 def configure_logging() -> None:
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     for handler in logging.getLogger().handlers:
@@ -139,14 +152,24 @@ async def message_handler(message: Message, mcp_client) -> None:
         task.cancel()
 
     async def send_progress(text: str) -> None:
-        await message.answer(f"{text}")
+        status[0] = text
 
-    async with chat_locks.setdefault(message.chat.id, asyncio.Lock()):
-        response_text = await agent_loop(
-            mcp_client=mcp_client, tools=tools, user_message=message.text,
-            chat_id=message.chat.id, on_progress=send_progress,
-        )
+    status = ["Прокладаю маршрут до ідеального кошика"]
+    status_message = await message.answer(progress_card(status[0], active_dot=0))
+    animation = asyncio.create_task(animate_progress(status_message, status))
+    try:
+        async with chat_locks.setdefault(message.chat.id, asyncio.Lock()):
+            response_text = await agent_loop(
+                mcp_client=mcp_client, tools=tools, user_message=message.text,
+                chat_id=message.chat.id, on_progress=send_progress,
+            )
+    finally:
+        animation.cancel()
+        with suppress(asyncio.CancelledError):
+            await animation
+
     await message.answer(response_text)
+    await status_message.delete()
     if "?" in response_text:
         follow_up_tasks[message.chat.id] = asyncio.create_task(
             resume_after_silence(message, mcp_client)

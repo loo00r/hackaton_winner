@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import threading
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
 
@@ -38,6 +39,23 @@ tools: list[dict] = []
 history_by_chat: dict[int, list[dict]] = {}
 logger = logging.getLogger(__name__)
 
+
+async def request_llm(**kwargs):
+    loop = asyncio.get_running_loop()
+    result = loop.create_future()
+
+    def run() -> None:
+        try:
+            response = llm_client.chat.completions.create(**kwargs)
+        except Exception as error:
+            loop.call_soon_threadsafe(result.set_exception, error)
+        else:
+            loop.call_soon_threadsafe(result.set_result, response)
+
+    threading.Thread(target=run, daemon=True).start()
+    return await result
+
+
 async def agent_loop(
     mcp_client: Client, tools: list, user_message: str, chat_id: int,
     on_progress: Callable[[str], Awaitable[None]] | None = None,
@@ -55,10 +73,10 @@ async def agent_loop(
         
     while True:
         logger.info("LLM: chat=%s, deciding next step", chat_id)
-        response = llm_client.chat.completions.create(
-            messages=messages,
-            model="gpt-4o",
-            tools=tools,
+        if on_progress:
+            await on_progress("Аналізую запит і складаю план")
+        response = await request_llm(
+            messages=messages, model="gpt-4o", tools=tools,
         )
         message = response.choices[0].message
         assistant_message = message.model_dump(exclude_none=True)
@@ -69,9 +87,6 @@ async def agent_loop(
         else:
             logger.info("LLM: final response ready")
 
-        if message.tool_calls and message.content and on_progress:
-            await on_progress(message.content)
-
         if not message.tool_calls:
             logger.info("Agent finished: chat_id=%s, history_items=%s", chat_id, len(history))
             return message.content
@@ -81,6 +96,8 @@ async def agent_loop(
             arguments = json.loads(tool_call.function.arguments)
 
             logger.info("MCP → %s", name)
+            if on_progress:
+                await on_progress("Звіряю актуальні дані з Сільпо")
 
             result = await mcp_client.call_tool(name, arguments)
 
