@@ -1,3 +1,4 @@
+![Demo](assets/demo.gif)
 # Gatherly × Silpo MCP
 
 **Gatherly** — Telegram-агент для організації групових подій у Сільпо. Він
