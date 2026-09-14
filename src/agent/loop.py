@@ -1,12 +1,13 @@
 import asyncio
 import json
 import logging
+import threading
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
 
 from mcp import Client
 
-from src.llm.client import llm_client
+from src.llm.client import MODEL, llm_client
 from src.llm.prompt import SYSTEM_PROMPT
 from src.mcp_client.adapter import mcp_tool_to_openai_tool
 from src.mcp_client.client import mcp_connection
@@ -38,6 +39,23 @@ tools: list[dict] = []
 history_by_chat: dict[int, list[dict]] = {}
 logger = logging.getLogger(__name__)
 
+
+async def request_llm(**kwargs):
+    loop = asyncio.get_running_loop()
+    result = loop.create_future()
+
+    def run() -> None:
+        try:
+            response = llm_client.chat.completions.create(**kwargs)
+        except Exception as error:
+            loop.call_soon_threadsafe(result.set_exception, error)
+        else:
+            loop.call_soon_threadsafe(result.set_result, response)
+
+    threading.Thread(target=run, daemon=True).start()
+    return await result
+
+
 async def agent_loop(
     mcp_client: Client, tools: list, user_message: str, chat_id: int,
     on_progress: Callable[[str], Awaitable[None]] | None = None,
@@ -55,9 +73,9 @@ async def agent_loop(
         
     while True:
         logger.info("LLM: chat=%s, deciding next step", chat_id)
-        response = llm_client.chat.completions.create(
+        response = await request_llm(
             messages=messages,
-            model="gpt-4o",
+            model=MODEL,
             tools=tools,
         )
         message = response.choices[0].message

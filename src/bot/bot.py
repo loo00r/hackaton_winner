@@ -6,7 +6,7 @@ from os import getenv
 
 from aiogram import Bot, Dispatcher, F, html
 from aiogram.client.default import DefaultBotProperties
-from aiogram.enums import ParseMode
+from aiogram.enums import ChatAction, ParseMode
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 from dotenv import load_dotenv
@@ -109,9 +109,17 @@ async def typewrite(text: str, delay: float) -> None:
 
 
 async def show_startup_banner() -> None:
+    await typewrite("ACHUTNG: Initializing gatherly_bot", delay=0.008)
+    await asyncio.sleep(2)
     await typewrite(BOT_ART, delay=0.008)
     await asyncio.sleep(2)
     await typewrite(STARTUP_STATUS, delay=0.012)
+
+
+async def keep_typing(message: Message) -> None:
+    while True:
+        await asyncio.sleep(4)
+        await message.bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
 
 
 def configure_logging() -> None:
@@ -142,11 +150,18 @@ async def message_handler(message: Message, mcp_client) -> None:
         await message.answer(f"{text}")
 
     async with chat_locks.setdefault(message.chat.id, asyncio.Lock()):
-        response_text = await agent_loop(
-            mcp_client=mcp_client, tools=tools, user_message=message.text,
-            chat_id=message.chat.id, on_progress=send_progress,
-        )
-    await message.answer(response_text)
+        await message.bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
+        typing = asyncio.create_task(keep_typing(message))
+        try:
+            response_text = await agent_loop(
+                mcp_client=mcp_client, tools=tools, user_message=message.text,
+                chat_id=message.chat.id, on_progress=send_progress,
+            )
+        finally:
+            typing.cancel()
+            with suppress(asyncio.CancelledError):
+                await typing
+        await message.answer(response_text)
     if "?" in response_text:
         follow_up_tasks[message.chat.id] = asyncio.create_task(
             resume_after_silence(message, mcp_client)
