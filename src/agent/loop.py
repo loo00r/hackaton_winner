@@ -23,6 +23,7 @@ FILTER_TOOLS = [
     "silpo_get_time_slots",
     "silpo_find_products_batch",
     "silpo_get_products",
+    "silpo_get_product_details",
     "silpo_get_promotions",
     "silpo_add_or_update_cart_products",
     "silpo_remove_cart_products",
