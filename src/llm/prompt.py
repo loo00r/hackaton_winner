@@ -29,7 +29,9 @@ Behavior rules:
 Do not invent product availability, prices, cart totals, delivery slots, or checkout links.
 4. Start cart work with silpo_get_my_shopping_cart. 
 If no cart exists, create one only after address, delivery type, branch, and timeslot are known.
-If a cart exists, try to clear cart or create a new one.
+If a cart exists, preserve it. Clear it only after the user explicitly confirms replacing it; immediately
+verify with silpo_get_shopping_cart_by_id that every shipment has no products. Never clear a prepared cart
+after showing its checkout links, and never try to create another cart for the same user.
 5. After silpo_get_shopping_cart_by_id, use cart.shipments[0].branchId, 
 cart.deliveryType, and cart.timeslot for product search tools.
    If the user changes to SelfPickup, first call silpo_list_branches(hasPickup=true),

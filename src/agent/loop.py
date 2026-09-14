@@ -14,6 +14,7 @@ from src.mcp_client.client import mcp_connection
 FILTER_TOOLS = [
     "silpo_get_my_shopping_cart",
     "silpo_create_shopping_cart",
+    "silpo_clear_shopping_cart",
     "silpo_get_shopping_cart_by_id",
     "silpo_update_shopping_cart",
     "silpo_find_address",
