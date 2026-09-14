@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import sys
+from contextlib import suppress
 from os import getenv
 
 from aiogram import Bot, Dispatcher, F, html
@@ -44,6 +45,44 @@ STARTUP_STATUS = r"""
     │ ........Ініціалізую протоколи доставки      │
     │ ......Людство  довірило ШІ вибір чипсів     │
     ╰─────────────────────────────────────────────╯"""
+APP_LOGGERS = ("src.agent.loop", "src.bot.bot")
+
+
+class TypewriterLogHandler(logging.Handler):
+    def __init__(self) -> None:
+        super().__init__(level=logging.INFO)
+        self.addFilter(lambda record: record.levelno == logging.INFO)
+        self.queue: asyncio.Queue[str] = asyncio.Queue()
+        self.worker: asyncio.Task | None = None
+
+    def emit(self, record: logging.LogRecord) -> None:
+        self.queue.put_nowait(self.format(record))
+
+    def start(self) -> None:
+        self.worker = asyncio.create_task(self._write_logs())
+
+    async def stop(self) -> None:
+        await self.queue.join()
+        if self.worker:
+            self.worker.cancel()
+            with suppress(asyncio.CancelledError):
+                await self.worker
+
+    async def _write_logs(self) -> None:
+        while True:
+            line = await self.queue.get()
+            try:
+                await typewrite(line, delay=0.002)
+            finally:
+                self.queue.task_done()
+
+
+class InstantLogFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        return not (record.name in APP_LOGGERS and record.levelno == logging.INFO)
+
+
+typewriter_logs = TypewriterLogHandler()
 
 
 async def resume_after_silence(message: Message, mcp_client) -> None:
@@ -61,18 +100,29 @@ async def resume_after_silence(message: Message, mcp_client) -> None:
         follow_up_active.discard(chat_id)
 
 
+async def typewrite(text: str, delay: float) -> None:
+    for symbol in text:
+        sys.stdout.write(symbol)
+        sys.stdout.flush()
+        await asyncio.sleep(delay)
+    sys.stdout.write("\n")
+
+
 async def show_startup_banner() -> None:
-    for symbol in BOT_ART:
-        sys.stdout.write(symbol)
-        sys.stdout.flush()
-        await asyncio.sleep(0.008)
-    sys.stdout.write("\n")
+    await typewrite(BOT_ART, delay=0.008)
     await asyncio.sleep(2)
-    for symbol in STARTUP_STATUS:
-        sys.stdout.write(symbol)
-        sys.stdout.flush()
-        await asyncio.sleep(0.012)
-    sys.stdout.write("\n")
+    await typewrite(STARTUP_STATUS, delay=0.012)
+
+
+def configure_logging() -> None:
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+    for handler in logging.getLogger().handlers:
+        handler.addFilter(InstantLogFilter())
+    typewriter_logs.setFormatter(logging.Formatter("%(levelname)s:%(name)s:%(message)s"))
+    for name in APP_LOGGERS:
+        logging.getLogger(name).addHandler(typewriter_logs)
+    for noisy_logger in ("httpx", "httpx2", "openai._base_client", "aiogram.event"):
+        logging.getLogger(noisy_logger).setLevel(logging.WARNING)
 
 @dp.message(CommandStart())
 async def start_handler(message: Message) -> None:
@@ -106,22 +156,24 @@ async def message_handler(message: Message, mcp_client) -> None:
 async def main() -> None:
     # Initialize Bot instance with default bot properties which will be passed to all API calls
     await show_startup_banner()
-    bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-    
-    async with mcp_connection() as mcp_client:
-        result = await mcp_client.list_tools()
-        tools[:] = map(
-            mcp_tool_to_openai_tool,
-            (tool for tool in result.tools if tool.name in FILTER_TOOLS),
-        )
-        if not tools:
-            raise RuntimeError("MCP returned no enabled tools; polling will not start")
-        logging.info("Loaded %d enabled tools from MCP server", len(tools))
-        await dp.start_polling(bot, mcp_client=mcp_client)
+    typewriter_logs.start()
+    try:
+        bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+
+        async with mcp_connection() as mcp_client:
+            result = await mcp_client.list_tools()
+            tools[:] = map(
+                mcp_tool_to_openai_tool,
+                (tool for tool in result.tools if tool.name in FILTER_TOOLS),
+            )
+            if not tools:
+                raise RuntimeError("MCP returned no enabled tools; polling will not start")
+            logger.info("Loaded %d enabled tools from MCP server", len(tools))
+            await dp.start_polling(bot, mcp_client=mcp_client)
+    finally:
+        await typewriter_logs.stop()
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
-    for noisy_logger in ("httpx", "httpx2", "openai._base_client", "aiogram.event"):
-        logging.getLogger(noisy_logger).setLevel(logging.WARNING)
+    configure_logging()
     asyncio.run(main())
