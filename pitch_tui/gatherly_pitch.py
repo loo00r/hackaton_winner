@@ -249,15 +249,34 @@ RENDERERS = (
 
 def render(scene: int, frame: int) -> None:
     columns, rows = shutil.get_terminal_size((64, 28))
-    width = min(64, max(42, columns - 4))
+    screen_width = max(42, columns - 2)
+    width = screen_width - 4
     title, subtitle = SCENES[scene]
     content = RENDERERS[scene](frame, width)
-    output = ["", paint("  GATHERLY × SILPO MCP", DIM + CYAN)]
-    output += [paint(f"  {scene + 1:02d} / {len(SCENES):02d}   {title}", BOLD + WHITE), paint(f"  {subtitle}", DIM)]
-    output += [""] + content
-    output += ["", paint("  ←/→ next scene   1–9 jump   q quit", DIM)]
-    if len(output) < rows:
-        output += [""] * (rows - len(output))
+    inner = screen_width - 2
+
+    def frame_line(text: str = "") -> str:
+        return paint("║", CYAN) + text + " " * max(0, inner - len(strip_ansi(text))) + paint("║", CYAN)
+
+    header = [
+        frame_line(paint("  GATHERLY × SILPO MCP", BOLD + CYAN)),
+        frame_line(paint(f"  {scene + 1:02d} / {len(SCENES):02d}   {title}", BOLD + WHITE)),
+        frame_line(paint(f"  {subtitle}", DIM)),
+        frame_line(paint("  LIVE DEMO  •  EVENT AGENT  •  SILPO MCP", DIM + PINK)),
+        paint("╠" + "═" * inner + "╣", CYAN),
+    ]
+    footer = [
+        paint("╠" + "═" * inner + "╣", CYAN),
+        frame_line(paint("  ←/→ navigate     Space next     1–9 jump     q quit", DIM)),
+    ]
+    empty_rows = max(0, rows - len(header) - len(footer) - len(content) - 2)
+    before = empty_rows // 2
+    after = empty_rows - before
+    output = [paint("╔" + "═" * inner + "╗", CYAN), *header]
+    output += [frame_line() for _ in range(before)]
+    output += [frame_line("  " + line) for line in content]
+    output += [frame_line() for _ in range(after)]
+    output += [*footer, paint("╚" + "═" * inner + "╝", CYAN)]
     sys.stdout.write("\x1b[H\x1b[2J" + "\n".join(output[:rows]))
     sys.stdout.flush()
 
