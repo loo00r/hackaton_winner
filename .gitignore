@@ -1,5 +1,7 @@
 /src/test.py
 .env
+.idea/
+.vscode/
 __pycache__/
 .pytest_cache/
 IDEA.md
