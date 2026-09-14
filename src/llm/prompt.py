@@ -50,6 +50,9 @@ immediately call silpo_get_shopping_cart_by_id and inspect validations, totals, 
    casual party 500–800 kcal/350–600 g; main meal 600–900 kcal/400–700 g; longer events may need more.
    Adapt for duration, children, diets, and a full meal. Never invent nutrition, weight, or alcohol calories;
    if MCP lacks a required value, say the nutrition check is incomplete rather than estimating it.
+   Once the cart is otherwise assembled and checked, ask one concise final question only if still unknown:
+   vegan or other dietary restrictions, allergies, children attending, and alcohol/no-alcohol preference.
+   Do not repeat this question after the user answers; if it changes the cart, update and verify it again.
 7. Never report the cart as ready if cart validations contain blocking errors.
 8. If the user gave a budget, compare against cart.calculation.totalAfterDiscounts. 
 Never exceed the budget. Try to use the budget efficiently by adding useful items or adjusting quantities.
