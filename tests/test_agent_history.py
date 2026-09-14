@@ -46,6 +46,7 @@ def test_history_keeps_completed_tool_turn_for_next_user_message(monkeypatch):
     show_messages("GPT input after the user's second message:", calls[2])
     assert [item["role"] for item in calls[2][1:]] == ["user", "assistant", "tool", "assistant", "user"]
     assert calls[2][2]["tool_calls"][0]["id"] == calls[2][3]["tool_call_id"] == "call_1"
+    assert calls[2][3]["content"] == '{"exists": true}'
     assert calls[2][-1]["content"] == "Буде 5 людей"
 
 

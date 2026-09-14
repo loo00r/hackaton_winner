@@ -38,6 +38,24 @@ tools: list[dict] = []
 history_by_chat: dict[int, list[dict]] = {}
 logger = logging.getLogger(__name__)
 
+
+def compact_tool_result(result) -> str:
+    """Keep only durable facts from an MCP response in cross-turn history."""
+    if result.structured_content is None:
+        return result.content[0].text[:1000]
+
+    content = result.structured_content
+    if not isinstance(content, dict):
+        return json.dumps(content, ensure_ascii=False)[:1000]
+
+    compact = {
+        key: content[key]
+        for key in ("success", "summary", "message", "error", "meta", "exists", "shoppingCartId")
+        if key in content
+    }
+    return json.dumps(compact, ensure_ascii=False)
+
+
 async def agent_loop(
     mcp_client: Client, tools: list, user_message: str, chat_id: int,
     on_progress: Callable[[str], Awaitable[None]] | None = None,
@@ -54,7 +72,7 @@ async def agent_loop(
     ]
         
     while True:
-        logger.info("LLM input: %s", json.dumps(messages, ensure_ascii=False, default=str))
+        logger.info("LLM input: chat_id=%s, messages=%s", chat_id, len(messages))
         response = llm_client.chat.completions.create(
             messages=messages,
             model="gpt-4o",
@@ -91,8 +109,8 @@ async def agent_loop(
                 "content": tool_text,
             }
             messages.append(tool_message)
-            history.append(tool_message)
-            logger.info("MCP result: tool=%s, content=%s", name, tool_text)
+            history.append({**tool_message, "content": compact_tool_result(result)})
+            logger.info("MCP result: tool=%s, chars=%s", name, len(tool_text))
 
 
 async def main() -> None:
