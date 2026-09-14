@@ -1,8 +1,7 @@
 from openai import OpenAI
+from dotenv import load_dotenv
 
-MODEL = "gemma4:12b"
+load_dotenv(override=True)
+MODEL = "gpt-4.1-mini"
 
-llm_client = OpenAI(
-    base_url="http://localhost:11434/v1",
-    api_key="ollama",
-)
+llm_client = OpenAI()

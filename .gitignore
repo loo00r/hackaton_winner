@@ -2,3 +2,4 @@
 .env
 IDEA.md
 /*.md
+!/README.md

@@ -1,11 +1,13 @@
 import asyncio
 import json
 import logging
+import re
 import threading
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
 
 from mcp import Client
+from openai import RateLimitError
 
 from src.llm.client import MODEL, llm_client
 from src.llm.prompt import SYSTEM_PROMPT
@@ -40,7 +42,7 @@ history_by_chat: dict[int, list[dict]] = {}
 logger = logging.getLogger(__name__)
 
 
-async def request_llm(**kwargs):
+async def request_llm_once(**kwargs):
     loop = asyncio.get_running_loop()
     result = loop.create_future()
 
@@ -54,6 +56,26 @@ async def request_llm(**kwargs):
 
     threading.Thread(target=run, daemon=True).start()
     return await result
+
+
+def rate_limit_delay(error: RateLimitError) -> float:
+    retry_after = error.response.headers.get("retry-after") if error.response else None
+    if retry_after:
+        return max(1.0, float(retry_after))
+    match = re.search(r"try again in ([\d.]+)s", str(error), re.IGNORECASE)
+    return max(1.0, float(match.group(1))) if match else 5.0
+
+
+async def request_llm(**kwargs):
+    for attempt in range(3):
+        try:
+            return await request_llm_once(**kwargs)
+        except RateLimitError as error:
+            if attempt == 2:
+                raise
+            delay = rate_limit_delay(error)
+            logger.warning("LLM rate-limited; retrying in %.1fs", delay)
+            await asyncio.sleep(delay)
 
 
 async def agent_loop(
