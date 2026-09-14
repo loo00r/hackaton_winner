@@ -1,5 +1,8 @@
 /src/test.py
 .env
+__pycache__/
+.pytest_cache/
 IDEA.md
 /*.md
 !/README.md
+/pitch_tui
