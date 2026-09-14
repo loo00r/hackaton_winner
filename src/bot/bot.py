@@ -17,6 +17,7 @@ from src.mcp_client.client import mcp_connection
 load_dotenv()
 
 TOKEN = getenv("BOT_TOKEN")
+logger = logging.getLogger(__name__)
 
 # All handlers should be attached to the Router (or Dispatcher)
 dp = Dispatcher()
@@ -24,6 +25,24 @@ follow_up_tasks: dict[int, asyncio.Task] = {}
 follow_up_active: set[int] = set()
 chat_locks: dict[int, asyncio.Lock] = {}
 SILENCE_PROMPT = "[SILENCE FOLLOW-UP] No user reply for 15 seconds. Use MCP to find safe options and continue; do not repeat the question."
+BOT_ART = r"""       ✧      ●      ✧
+              │
+     ╭────────┴────────╮
+     │                 │
+     │   ◠         ◠   │
+     │                 │
+     │  ░░  ╰───╯  ░░  │
+     │                 │
+     ╰───────┬─┬───────╯
+   ╲         │ │         ╱
+    ╲    ╭───┴─┴───╮    ╱
+     ╰───┤   ♥ ♥   ├───╯
+         │  ▰▰▰▰▰  │
+         ╰─────────╯
+      ╭─────────────────────────────────────────────╮
+      │ ........Ініціалізую протоколи доставки      │
+      │ ......Людство  довірило ШІ вибір чипсів     │
+      ╰─────────────────────────────────────────────╯"""
 
 
 async def resume_after_silence(message: Message, mcp_client) -> None:
@@ -71,6 +90,7 @@ async def message_handler(message: Message, mcp_client) -> None:
 
 async def main() -> None:
     # Initialize Bot instance with default bot properties which will be passed to all API calls
+    logger.info("\n%s", BOT_ART)
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     
     async with mcp_connection() as mcp_client:
