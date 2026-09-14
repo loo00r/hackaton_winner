@@ -1,0 +1,10 @@
+{
+  "tool": "silpo_get_my_shopping_cart",
+  "timestamp": "2026-09-06T11:31:11.146170+00:00",
+  "is_error": false,
+  "data": {
+    "success": true,
+    "shoppingCartId": null,
+    "exists": false
+  }
+}

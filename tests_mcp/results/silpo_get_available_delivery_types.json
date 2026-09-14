@@ -1,0 +1,36 @@
+{
+  "tool": "silpo_get_available_delivery_types",
+  "timestamp": "2026-09-06T11:31:11.516171+00:00",
+  "is_error": false,
+  "data": {
+    "success": true,
+    "summary": "Found 5 delivery options for 50.44747065, 30.521505797601343",
+    "options": [
+      {
+        "deliveryType": "DeliveryHome",
+        "branchId": "1edb6b38-214b-66d6-a8e0-7f2fdd178564",
+        "description": "Regular delivery (groceries, fresh products)"
+      },
+      {
+        "deliveryType": "WideAssortDelivery",
+        "branchId": "1edee42d-e1bb-6062-b15c-85b79c775c85",
+        "description": "Wide assortment delivery (extended product range)"
+      },
+      {
+        "deliveryType": "B2B",
+        "branchId": "1ee11bac-502d-6cd6-bd9d-7921cac13a23",
+        "description": "B2B delivery (business orders)"
+      },
+      {
+        "deliveryType": "NovaPoshta",
+        "branchId": null,
+        "description": "Nova Poshta delivery (shipped via Nova Poshta)"
+      },
+      {
+        "deliveryType": "SelfPickup",
+        "branchId": null,
+        "description": "Self pickup from a Silpo store"
+      }
+    ]
+  }
+}

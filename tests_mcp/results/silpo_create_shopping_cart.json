@@ -1,0 +1,10 @@
+{
+  "tool": "silpo_create_shopping_cart",
+  "timestamp": "2026-09-06T11:31:11.763953+00:00",
+  "is_error": false,
+  "data": {
+    "success": true,
+    "summary": "Shopping cart created",
+    "shoppingCartId": "a02f6327-3059-4067-9301-842411214cc9"
+  }
+}

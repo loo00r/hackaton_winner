@@ -1,13 +1,14 @@
-import httpx2
 
-from dotenv import load_dotenv
-import os
-from mcp import Client
-from mcp.client.streamable_http import streamable_http_client
-from mcp.types import TextContent
 import asyncio
 import json
+import os
 
+import httpx2
+from dotenv import load_dotenv
+from mcp import Client
+from mcp.client.streamable_http import streamable_http_client
+
+from mcp_client.adapter import mcp_tool_to_openai_tool
 
 # my_oauth_provider має бути оголошений або імпортований тут
 load_dotenv()
@@ -21,14 +22,11 @@ async def main() -> None:
     ) as http_client:
         transport = streamable_http_client("https://mcp.silpo.ua/mcp", http_client=http_client)
         async with Client(transport) as client:
-            result = await client.call_tool("silpo_get_my_family", {"title": "Get My Family"})
+            result = await client.list_tools()
 
-            for block in result.content:
-                if isinstance(block, TextContent):
-                    print(block.text)
+            with open("tools.json", "w") as f:
+                f.writelines(json.dumps(mcp_tool_to_openai_tool(tool)) for tool in result.tools)
 
-            print(result.structured_content)
-            print(result.is_error)
 
 
 if __name__ == "__main__":

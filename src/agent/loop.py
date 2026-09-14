@@ -1,63 +1,156 @@
-from llm.client import llm_client
-from mcp import Client
 import asyncio
-from mcp_client.client import mcp_connection
 import json
+import logging
+import re
+import threading
+from collections.abc import Awaitable, Callable
+from datetime import datetime, timezone
+
+from mcp import Client
+from openai import RateLimitError
+
+from src.llm.client import MODEL, llm_client
+from src.llm.prompt import SYSTEM_PROMPT
+from src.mcp_client.adapter import mcp_tool_to_openai_tool
+from src.mcp_client.client import mcp_connection
+
+FILTER_TOOLS = [
+    "silpo_get_my_shopping_cart",
+    "silpo_create_shopping_cart",
+    "silpo_clear_shopping_cart",
+    "silpo_get_shopping_cart_by_id",
+    "silpo_update_shopping_cart",
+    "silpo_find_address",
+    "silpo_get_my_delivery_addresses",
+    "silpo_get_available_delivery_types",
+    "silpo_list_branches",
+    "silpo_get_time_slots",
+    "silpo_find_products_batch",
+    "silpo_get_products",
+    "silpo_get_product_details",
+    "silpo_get_promotions",
+    "silpo_add_or_update_cart_products",
+    "silpo_remove_cart_products",
+    "silpo_get_my_food_restrictions",
+    "silpo_get_my_favorites",
+]
+
+tools: list[dict] = []
 
 
+history_by_chat: dict[int, list[dict]] = {}
+logger = logging.getLogger(__name__)
 
-AGENT_LOOP = True
 
-with open("tools.jsonl", "r") as json_file:
-    tools = [json.loads(line) for line in json_file]
-    tools = [tool for tool in tools if tool["function"]["name"] in ["silpo_get_my_family", "silpo_get_my_family_by_name"]]
+async def request_llm_once(**kwargs):
+    loop = asyncio.get_running_loop()
+    result = loop.create_future()
 
-async def agent_loop(mcp_client: Client, tools: list):
+    def run() -> None:
+        try:
+            response = llm_client.chat.completions.create(**kwargs)
+        except Exception as error:
+            loop.call_soon_threadsafe(result.set_exception, error)
+        else:
+            loop.call_soon_threadsafe(result.set_result, response)
+
+    threading.Thread(target=run, daemon=True).start()
+    return await result
+
+
+def rate_limit_delay(error: RateLimitError) -> float:
+    retry_after = error.response.headers.get("retry-after") if error.response else None
+    if retry_after:
+        return max(1.0, float(retry_after))
+    match = re.search(r"try again in ([\d.]+)s", str(error), re.IGNORECASE)
+    return max(1.0, float(match.group(1))) if match else 5.0
+
+
+async def request_llm(**kwargs):
+    for attempt in range(3):
+        try:
+            return await request_llm_once(**kwargs)
+        except RateLimitError as error:
+            if attempt == 2:
+                raise
+            delay = rate_limit_delay(error)
+            logger.warning("LLM rate-limited; retrying in %.1fs", delay)
+            await asyncio.sleep(delay)
+
+
+async def agent_loop(
+    mcp_client: Client, tools: list, user_message: str, chat_id: int,
+    on_progress: Callable[[str], Awaitable[None]] | None = None,
+):
+    history = history_by_chat.setdefault(chat_id, [])
+    history.append({"role": "user", "content": user_message})
+    logger.info("Agent input: chat_id=%s, history_items=%s", chat_id, len(history))
     messages = [
         {
-            'role': 'system',
-            'content': 'cпробуй викликати тулу  silpo_get_my_family і подивись чи ти зможеш побачити що вона поверне'
-        }]
-
-    while AGENT_LOOP:
-        response = llm_client.chat.completions.create(
+            "role": "system",
+            "content": f"{SYSTEM_PROMPT}\nCurrent UTC time: {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}",
+        },
+        *history,
+    ]
+        
+    while True:
+        logger.info("LLM: chat=%s, deciding next step", chat_id)
+        response = await request_llm(
             messages=messages,
-            model='gemma4:12b',
-            tools=tools
+            model=MODEL,
+            tools=tools,
         )
         message = response.choices[0].message
-        messages.append(message)
-        print(messages)
+        assistant_message = message.model_dump(exclude_none=True)
+        messages.append(assistant_message)
+        history.append(assistant_message)
+        if message.tool_calls:
+            logger.info("LLM: selected %d MCP step(s)", len(message.tool_calls))
+        else:
+            logger.info("LLM: final response ready")
+
+        if message.tool_calls and message.content and on_progress:
+            await on_progress(message.content)
 
         if not message.tool_calls:
-            print(message.content)
-            break
+            logger.info("Agent finished: chat_id=%s, history_items=%s", chat_id, len(history))
+            return message.content
 
         for tool_call in message.tool_calls:
-
             name = tool_call.function.name
             arguments = json.loads(tool_call.function.arguments)
 
-            print("LLM wants:", name)
-            print("Arguments:", arguments)
+            logger.info("MCP → %s", name)
 
-            # ОЦЕ ТУТ реальний MCP call
-            result = await mcp_client.call_tool(
-                name,
-                arguments
-            )
+            result = await mcp_client.call_tool(name, arguments)
 
-            print("MCP result:", result)
 
-            messages.append({
+
+            tool_text = json.dumps(result.structured_content, ensure_ascii=False) if result.structured_content is not None else result.content[0].text
+
+            tool_message = {
                 "role": "tool",
                 "tool_call_id": tool_call.id,
-                "content": json.dumps(result.structured_content)
-            })
+                "content": tool_text,
+            }
+            messages.append(tool_message)
+            history.append(tool_message)
+            summary = result.structured_content.get("summary") if isinstance(result.structured_content, dict) else None
+            logger.info("MCP ← %s%s", name, f": {summary}" if summary else "")
+
 
 async def main() -> None:
+
     async with mcp_connection() as mcp_client:
-        await agent_loop(mcp_client, tools)
+        result = await mcp_client.list_tools()
+        tools[:] = map(
+            mcp_tool_to_openai_tool,
+            (tool for tool in result.tools if tool.name in FILTER_TOOLS),
+        )
+        if not tools:
+            raise RuntimeError("MCP returned no enabled tools; agent will not start")
+        await agent_loop(mcp_client, tools, user_message, chat_id=0)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

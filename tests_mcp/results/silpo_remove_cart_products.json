@@ -1,0 +1,14 @@
+{
+  "tool": "silpo_remove_cart_products",
+  "timestamp": "2026-09-06T11:31:13.734405+00:00",
+  "is_error": false,
+  "data": {
+    "success": true,
+    "summary": "Removed 1 product(s) from cart",
+    "products": [
+      {
+        "productId": "1f0cd807-f218-694a-a117-db8945ba6700"
+      }
+    ]
+  }
+}

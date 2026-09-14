@@ -1,0 +1,15 @@
+{
+  "tool": "silpo_get_my_favorites",
+  "timestamp": "2026-09-06T11:31:12.617973+00:00",
+  "is_error": false,
+  "data": {
+    "success": true,
+    "summary": "No favorite products found",
+    "products": [],
+    "meta": {
+      "limit": 10,
+      "offset": 0,
+      "total": 0
+    }
+  }
+}
