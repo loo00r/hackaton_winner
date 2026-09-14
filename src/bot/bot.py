@@ -38,11 +38,12 @@ BOT_ART = r"""       ✧      ●      ✧
     ╲    ╭───┴─┴───╮    ╱
      ╰───┤   ♥ ♥   ├───╯
          │  ▰▰▰▰▰  │
-         ╰─────────╯
-      ╭─────────────────────────────────────────────╮
-      │ ........Ініціалізую протоколи доставки      │
-      │ ......Людство  довірило ШІ вибір чипсів     │
-      ╰─────────────────────────────────────────────╯"""
+         ╰─────────╯"""
+STARTUP_STATUS = r"""
+    ╭─────────────────────────────────────────────╮
+    │ ........Ініціалізую протоколи доставки      │
+    │ ......Людство  довірило ШІ вибір чипсів     │
+    ╰─────────────────────────────────────────────╯"""
 
 
 async def resume_after_silence(message: Message, mcp_client) -> None:
@@ -58,6 +59,20 @@ async def resume_after_silence(message: Message, mcp_client) -> None:
             await message.answer(response)
     finally:
         follow_up_active.discard(chat_id)
+
+
+async def show_startup_banner() -> None:
+    for symbol in BOT_ART:
+        sys.stdout.write(symbol)
+        sys.stdout.flush()
+        await asyncio.sleep(0.008)
+    sys.stdout.write("\n")
+    await asyncio.sleep(2)
+    for symbol in STARTUP_STATUS:
+        sys.stdout.write(symbol)
+        sys.stdout.flush()
+        await asyncio.sleep(0.012)
+    sys.stdout.write("\n")
 
 @dp.message(CommandStart())
 async def start_handler(message: Message) -> None:
@@ -90,7 +105,7 @@ async def message_handler(message: Message, mcp_client) -> None:
 
 async def main() -> None:
     # Initialize Bot instance with default bot properties which will be passed to all API calls
-    logger.info("\n%s", BOT_ART)
+    await show_startup_banner()
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     
     async with mcp_connection() as mcp_client:
